@@ -35,6 +35,7 @@ A lightweight, privacy-first Chrome Extension (Manifest V3) designed for domain-
 
 ---
 
-## License
+## License & Attribution
 
-MIT License. Free to use, modify, and distribute.
+- **Code:** Free to use, modify, and redistribute.
+- **Branding & Logo:** Original logo created by the author. All visual assets and icon designs are copyright © aka_3elwa. All rights reserved.
