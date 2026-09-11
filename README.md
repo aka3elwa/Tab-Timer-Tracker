@@ -31,6 +31,10 @@ A lightweight, privacy-first Chrome Extension (Manifest V3) designed for domain-
 
 ---
 
+**For bugs and recommendations contact me via email: alimou682@gmail.com**
+
+---
+
 ## License
 
 MIT License. Free to use, modify, and distribute.
