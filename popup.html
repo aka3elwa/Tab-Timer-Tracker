@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tab Timer Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { width: 320px; background: #0f172a; color: #f8fafc; padding: 14px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .title { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; color: #38bdf8; text-transform: uppercase; }
+    .badge { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 9999px; letter-spacing: 0.5px; }
+    .badge.active { background: #059669; color: #ecfdf5; }
+    .badge.paused { background: #f59e0b; color: #1e293b; }
+    .badge.off { background: #475569; color: #f8fafc; }
+    .icon-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; border-radius: 4px; line-height: 1; }
+    .icon-btn:hover { color: #38bdf8; background: #1e293b; }
+    
+    .settings-panel { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .settings-panel.open { display: block; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #cbd5e1; }
+    .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .2s; border-radius: 20px; }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .2s; border-radius: 50%; }
+    input:checked + .slider { background-color: #0284c7; }
+    input:checked + .slider:before { transform: translateX(14px); }
+
+    .timer-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center; margin-bottom: 12px; }
+    .timer-label { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .timer-display { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0 6px; }
+    
+    .input-label { font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; }
+    .input-row { display: flex; gap: 5px; margin-bottom: 10px; }
+    input[type="text"] { flex: 1; min-width: 0; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 8px; color: #f8fafc; font-size: 11px; outline: none; }
+    input[type="text"]:focus { border-color: #38bdf8; }
+    
+    button { cursor: pointer; border: none; border-radius: 6px; font-weight: 600; font-size: 12px; padding: 6px 10px; transition: 0.15s; white-space: nowrap; }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-secondary { background: #334155; color: #f1f5f9; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: #9f1239; color: #ffe4e6; }
+    .btn-danger:hover { background: #881337; }
+    .btn-save { background: #059669; color: #ffffff; }
+    .btn-save:hover { background: #047857; }
+
+    .actions { display: grid; gap: 6px; }
+
+    .save-prompt-card { display: none; background: #0f172a; border: 1px solid #0284c7; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: center; }
+    .save-prompt-card.open { display: block; }
+    .save-prompt-text { font-size: 11px; color: #38bdf8; margin-bottom: 8px; font-weight: 600; }
+    .save-prompt-buttons { display: flex; gap: 6px; justify-content: center; }
+
+    .history-card { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .history-card.open { display: block; }
+    .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+    .history-list { max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .history-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #334155; }
+    .history-row:last-child { border-bottom: none; }
+    .history-date { color: #cbd5e1; }
+    .history-time { font-weight: 700; color: #38bdf8; font-variant-numeric: tabular-nums; }
+    .history-empty { font-size: 11px; color: #64748b; text-align: center; padding: 6px 0; }
+    
+    .footer-note { font-size: 10px; color: #64748b; text-align: center; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Tab Timer Tracker</div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div id="statusBadge" class="badge off">OFF</div>
+      <button id="settingsToggleBtn" class="icon-btn" title="Settings">⚙</button>
+    </div>
+  </div>
+
+  <div id="settingsPanel" class="settings-panel">
+    <div class="settings-row">
+      <span>Auto-reset at midnight</span>
+      <label class="switch">
+        <input type="checkbox" id="autoResetToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="settings-row" style="margin-top: 10px; border-top: 1px solid #334155; padding-top: 10px;">
+      <span>Pause when idle</span>
+      <select id="idleTimeoutSelect" style="background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 4px; padding: 2px 6px; font-size: 11px; outline: none;">
+        <option value="30">30 seconds</option>
+        <option value="60">1 minute</option>
+        <option value="120">2 minutes</option>
+        <option value="300">5 minutes</option>
+        <option value="0">Disabled</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="timer-card">
+    <div>
+      <div class="timer-label">TODAY'S TOTAL</div>
+      <div id="timeDisplay" class="timer-display">00:00:00</div>
+    </div>
+
+    <div style="border-top: 1px solid #334155; margin: 8px 0;"></div>
+
+    <div>
+      <div class="timer-label">CURRENT SESSION</div>
+      <div id="sessionDisplay" class="timer-display" style="color: #38bdf8; font-size: 24px;">00:00:00</div>
+    </div>
+
+    <div class="timer-label" id="currentTrackedDomain" style="margin-top: 8px; color: #64748b;">No domain set</div>
+  </div>
+
+  <div class="input-label">Target Domain / Website</div>
+  <div class="input-row">
+    <input type="text" id="domainInput" placeholder="e.g. youtube.com" />
+    <button id="useCurrentTabBtn" class="btn-secondary" title="Use current tab" style="font-size: 11px; padding: 6px 8px;">Current</button>
+    <button id="saveDomainBtn" class="btn-primary" style="font-size: 11px; padding: 6px 8px;">Set</button>
+    <button id="clearDomainBtn" class="btn-secondary" title="Clear target domain" style="font-size: 11px; padding: 6px 8px; color: #fda4af;">✕</button>
+  </div>
+
+  <div style="margin-bottom: 6px;">
+    <button id="saveSessionBtn" class="btn-save" style="width: 100%;">Save Current Session</button>
+  </div>
+
+  <div id="sessionResetPrompt" class="save-prompt-card">
+    <div class="save-prompt-text">Session saved! Reset session timer to 00:00:00?</div>
+    <div class="save-prompt-buttons">
+      <button id="confirmResetSessionBtn" class="btn-primary" style="font-size: 11px; padding: 4px 12px;">Yes, Reset</button>
+      <button id="dismissPromptBtn" class="btn-secondary" style="font-size: 11px; padding: 4px 12px;">Keep It</button>
+    </div>
+  </div>
+
+  <div class="actions" style="grid-template-columns: 1fr 1fr; margin-bottom: 6px;">
+    <button id="pauseBtn" class="btn-secondary">Pause</button>
+    <button id="copyBtn" class="btn-secondary">Copy Time</button>
+  </div>
+  <div class="actions" style="grid-template-columns: 1fr 1fr; margin-bottom: 8px;">
+    <button id="resetSessionBtn" class="btn-secondary" style="font-size: 11px;">Reset Session</button>
+    <button id="resetTotalBtn" class="btn-danger" style="font-size: 11px;">Reset Total</button>
+  </div>
+
+  <div style="margin-top: 10px;">
+    <button id="toggleHistoryBtn" class="btn-secondary" style="width: 100%; font-size: 11px; padding: 6px;">Toggle History</button>
+  </div>
+
+  <div id="historyCard" class="history-card">
+    <div class="history-header">
+      <span>Logged Sessions</span>
+      <button id="clearHistoryBtn" style="background: none; border: none; color: #f43f5e; font-size: 10px; cursor: pointer;">Clear</button>
+    </div>
+    <div id="historyList" class="history-list">
+      <div class="history-empty">No history recorded yet</div>
+    </div>
+  </div>
+
+  <div class="footer-note">Tracks only while you are actively viewing the page.</div>
+    <div class="footer-note">© aka_3elwa</div>
+
+
+  <script src="popup.js"></script>
+</body>
+</html>
